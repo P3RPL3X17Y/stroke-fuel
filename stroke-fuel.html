@@ -1,0 +1,940 @@
+<title>Stroke Fuel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one narrow column built for a phone, bottom tab bar, river-teal accent; macro colors are fixed semantic hues. */
+:root {
+  --bg: #EDF2F1; --surface: #FFFFFF; --sunk: #E2EAE9; --ink: #10242B; --muted: #566A70; --line: #D2DCDB;
+  --accent: #0F6B73; --accent-ink: #FFFFFF; --soft: #D7ECEC;
+  --pro: #B4442F; --carb: #C9861F; --fat: #6B7A2B; --good: #2E7D4F; --warn: #B3541E;
+  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0B1518; --surface: #132328; --sunk: #0F1D21; --ink: #E3EDEC; --muted: #8DA3A7; --line: #22373D;
+  --accent: #4DB5BD; --accent-ink: #062126; --soft: #173A3E;
+  --pro: #E2725C; --carb: #E7AF55; --fat: #A9B95B; --good: #5CC08A; --warn: #E48A55; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0B1518; --surface: #132328; --sunk: #0F1D21; --ink: #E3EDEC; --muted: #8DA3A7; --line: #22373D;
+  --accent: #4DB5BD; --accent-ink: #062126; --soft: #173A3E;
+  --pro: #E2725C; --carb: #E7AF55; --fat: #A9B95B; --good: #5CC08A; --warn: #E48A55; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 16px/1.45 var(--body); }
+#app { max-width: 560px; margin: 0 auto; padding-inline: 16px; padding-block: 12px 96px; display: grid; gap: 14px }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: .01em; margin: 0; text-wrap: balance }
+h1 { font-size: 30px; line-height: 1 } h2 { font-size: 22px } h3 { font-size: 18px }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums }
+.muted { color: var(--muted) } .small { font-size: 14px } .tiny { font-size: 12.5px }
+.label { font: 600 12px/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; min-width: 0 }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap }
+.spread { display: flex; justify-content: space-between; align-items: center; gap: 8px }
+button, .btn { font: 600 15px var(--body); border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 9px 14px; cursor: pointer; min-height: 40px }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
+button.ghost { background: transparent; border-color: transparent; color: var(--accent); padding-inline: 6px }
+button:disabled { opacity: .55; cursor: default }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+input, select, textarea { font: 16px var(--body); color: var(--ink); background: var(--sunk); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; min-height: 40px; width: 100%; min-width: 0 }
+textarea { min-height: 64px; resize: vertical }
+.field { display: grid; gap: 4px; min-width: 0 }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px }
+
+/* header */
+.top { display: flex; align-items: end; justify-content: space-between; gap: 8px }
+.brand { font-family: var(--display); font-weight: 700; font-size: 14px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent) }
+.datenav { display: flex; align-items: center; gap: 2px }
+.datenav button { min-height: 36px; padding: 4px 10px }
+
+/* fuel gauge */
+.gauge { display: grid; gap: 12px }
+.kcal { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap }
+.kcal .big { font: 700 46px/1 var(--display) }
+.bar { height: 10px; background: var(--sunk); border-radius: 6px; overflow: hidden; position: relative }
+.bar > i { position: absolute; inset: 0 auto 0 0; border-radius: 6px; background: var(--c, var(--accent)) }
+.macro { display: grid; gap: 5px }
+.macro .spread span:first-child { font-weight: 600 }
+.micros { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px }
+.micro { background: var(--sunk); border-radius: 10px; padding: 8px 10px; display: grid; gap: 4px }
+.micro b { font: 500 15px var(--mono) }
+.pill { font: 600 11.5px/1 var(--body); letter-spacing: .04em; padding: 4px 8px; border-radius: 99px; background: var(--soft); color: var(--accent); white-space: nowrap }
+.pill.warn { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn) }
+.pill.good { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good) }
+
+/* timeline */
+.tl { display: grid; gap: 0 }
+.tl-row { display: grid; grid-template-columns: 52px 14px 1fr; gap: 8px; align-items: start }
+.tl-row .t { font: 500 13px var(--mono); color: var(--muted); padding-top: 3px; text-align: right }
+.tl-row .dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 6px; background: var(--line); justify-self: center; position: relative }
+.tl-row .dot.practice { background: var(--accent) } .tl-row .dot.window { background: transparent; border: 2px solid var(--accent) } .tl-row .dot.meal { background: var(--carb) }
+.tl-row .body { padding-bottom: 12px; min-width: 0 }
+.entry-items { display: grid; gap: 6px; margin-top: 6px }
+.it { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; min-width: 0 }
+.it .name { min-width: 0; overflow-wrap: anywhere }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 9px; overflow: hidden }
+.stepper button { border: 0; border-radius: 0; min-height: 34px; padding: 2px 11px; background: var(--sunk) }
+.stepper span { font: 500 14px var(--mono); min-width: 38px; text-align: center }
+
+/* week */
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end }
+.wk { display: grid; gap: 4px; justify-items: center }
+.wk .col { width: 100%; height: 70px; background: var(--sunk); border-radius: 6px; position: relative; overflow: hidden }
+.wk .col i { position: absolute; left: 0; right: 0; bottom: 0; background: var(--accent); opacity: .85 }
+.wk .col s { position: absolute; left: 0; right: 0; height: 2px; background: var(--ink); opacity: .35; text-decoration: none }
+.wk.sel .label { color: var(--accent) }
+
+/* log */
+.photos { display: flex; gap: 8px; flex-wrap: wrap }
+.photos img { width: 76px; height: 76px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line) }
+.drop { border: 1.5px dashed var(--line); border-radius: 12px; padding: 14px; text-align: center; display: grid; gap: 6px; cursor: pointer; background: var(--sunk) }
+.drop input { display: none }
+.menu-list { display: grid; gap: 2px; max-height: 420px; overflow-y: auto; margin-inline: -4px; padding-inline: 4px }
+.station { position: sticky; top: 0; background: var(--surface); padding: 8px 0 4px; z-index: 1 }
+.mi { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line) }
+.mi .meta { font-size: 13px; color: var(--muted) }
+.mi button { min-height: 34px; padding: 4px 12px }
+.mi.avoid > div:first-child { opacity: .62 }
+.quick { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px }
+.quick button { display: grid; gap: 1px; text-align: left; font-weight: 400; padding: 8px 10px; background: var(--sunk); min-width: 0 }
+.quick button b { font-weight: 600; font-size: 14px; line-height: 1.25 }
+.quick button span { font-size: 12px; color: var(--muted) }
+.quick button:active { background: var(--soft) }
+.chips { display: flex; gap: 6px; flex-wrap: wrap }
+.chips button { min-height: 36px; padding: 6px 12px; font-size: 14px; border-radius: 99px }
+.chips button.on { background: var(--warn); color: var(--surface); border-color: var(--warn) }
+.tray { position: fixed; left: 0; right: 0; bottom: calc(62px + env(safe-area-inset-bottom, 0px)); padding-inline: 16px; z-index: 5 }
+.tray > div { max-width: 528px; margin: 0 auto; background: var(--ink); color: var(--bg); border-radius: 14px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; justify-content: space-between; box-shadow: 0 6px 22px rgb(0 0 0 / .22) }
+.tray button { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
+
+/* where */
+.hall { display: grid; gap: 8px }
+.hall .rank { font: 700 28px/1 var(--display); color: var(--accent) }
+.picks { display: grid; gap: 4px; font-size: 14.5px }
+.picks div { display: flex; justify-content: space-between; gap: 8px }
+.picks div span:first-child { min-width: 0; overflow-wrap: anywhere }
+
+/* coach text */
+.ai { font-size: 15.5px; display: grid; gap: 6px; min-width: 0 }
+.ai p { margin: 0 } .ai ul { margin: 0; padding-left: 20px; display: grid; gap: 5px }
+.thinking { color: var(--muted); font-style: italic }
+
+/* setup */
+.sess { display: grid; gap: 8px; padding: 10px; background: var(--sunk); border-radius: 12px }
+.days { display: flex; gap: 4px; flex-wrap: wrap }
+.days button { min-height: 34px; min-width: 38px; padding: 4px 6px; font-size: 13px }
+.days button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden }
+.seg button { flex: 1; border: 0; border-radius: 0; font-size: 14px; padding: 8px 4px }
+.seg button.on { background: var(--accent); color: var(--accent-ink) }
+
+/* tab bar */
+nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); z-index: 6 }
+nav.tabs > div { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px }
+
+/* chat */
+.chat { display: grid; gap: 10px; padding-bottom: 76px }
+.msg { max-width: 88%; padding: 10px 12px; border-radius: 14px; min-width: 0; overflow-wrap: anywhere }
+.msg.me { justify-self: end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 4px; white-space: pre-wrap }
+.msg.coach { justify-self: start; background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 4px }
+.msg.sys { justify-self: center; font-size: 13px; color: var(--muted); padding: 2px 8px }
+.composer { position: fixed; left: 0; right: 0; bottom: calc(62px + env(safe-area-inset-bottom, 0px)); padding: 8px 16px; background: var(--bg); border-top: 1px solid var(--line); z-index: 5 }
+.composer form { max-width: 528px; margin: 0 auto; display: flex; gap: 8px; align-items: end }
+.composer textarea { min-height: 44px; max-height: 120px; resize: none }
+.starters { display: flex; gap: 6px; flex-wrap: wrap }
+.starters button { font-size: 14px; font-weight: 400; min-height: 34px; padding: 6px 12px; border-radius: 99px; background: var(--soft); border-color: transparent; color: var(--ink) }
+nav.tabs button { border: 0; background: transparent; display: grid; justify-items: center; gap: 2px; font-size: 12.5px; padding: 4px; color: var(--muted); min-height: 48px }
+nav.tabs button.on { color: var(--accent) }
+nav.tabs svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(140px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14.5px; z-index: 9; max-width: calc(100% - 32px) }
+.notice { background: var(--soft); border-radius: 12px; padding: 10px 12px; font-size: 14.5px }
+@media (prefers-reduced-motion: no-preference) { .bar > i { transition: width .4s ease } }
+@media (max-width: 380px) { .grid3 { grid-template-columns: 1fr 1fr } }
+</style>
+
+<main id="app"></main>
+<nav class="tabs" aria-label="Sections"><div id="tabs"></div></nav>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+(() => {
+"use strict";
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const r0 = n => Math.round(n || 0);
+const r1 = n => Math.round((n || 0) * 10) / 10;
+const fmt = n => r0(n).toLocaleString("en-US");
+const iso = d => new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+const today = () => iso(new Date());
+const addDays = (s, n) => { const d = new Date(s + "T12:00"); d.setDate(d.getDate() + n); return iso(d); };
+const dow = s => new Date(s + "T12:00").getDay();
+const nowHM = () => { const d = new Date(); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); };
+const toMin = hm => { const [h, m] = (hm || "0:0").split(":").map(Number); return h * 60 + (m || 0); };
+const toHM = m => { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); };
+const clock = hm => { if (!hm) return ""; let [h, m] = hm.split(":").map(Number); const ap = h >= 12 ? "p" : "a"; h = h % 12 || 12; return h + ":" + String(m).padStart(2, "0") + ap; };
+const niceDate = s => new Date(s + "T12:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+const uid36 = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+
+const NK = ["kcal", "p", "c", "f", "sf", "fb", "su", "as", "na", "ca", "fe", "k", "caf", "fl"];
+// One-tap drinks and quick fuel. Typical label values per serving; k = potassium mg, caf = caffeine mg, fl = fluid oz.
+const DRINKS = [
+  { g: "Hydration", n: "Water", sv: "16 fl oz", per: { kcal: 0, fl: 16 } },
+  { g: "Hydration", n: "Electrolyte mix, sugar-free (LMNT-style)", sv: "1 packet in 16 oz", per: { kcal: 5, c: 2, na: 1000, k: 200, fl: 16 } },
+  { g: "Hydration", n: "Liquid I.V.", sv: "1 stick in 16 oz", per: { kcal: 45, c: 11, su: 11, as: 11, na: 500, k: 370, fl: 16 } },
+  { g: "Hydration", n: "Gatorade", sv: "20 fl oz", per: { kcal: 140, c: 36, su: 34, as: 34, na: 270, k: 75, fl: 20 } },
+  { g: "Hydration", n: "Gatorade Zero", sv: "20 fl oz", per: { kcal: 5, c: 1, na: 270, k: 75, fl: 20 } },
+  { g: "Hydration", n: "Coconut water", sv: "11 fl oz", per: { kcal: 60, c: 15, su: 13, na: 60, k: 690, fl: 11 } },
+  { g: "Caffeine", n: "Coffee, black", sv: "12 fl oz", per: { kcal: 5, caf: 140, k: 170, fl: 12 } },
+  { g: "Caffeine", n: "Cold brew", sv: "16 fl oz", per: { kcal: 5, caf: 200, fl: 16 } },
+  { g: "Caffeine", n: "Celsius", sv: "12 fl oz can", per: { kcal: 10, c: 2, caf: 200, fl: 12 } },
+  { g: "Caffeine", n: "Red Bull", sv: "8.4 fl oz can", per: { kcal: 110, c: 28, su: 27, as: 27, na: 105, caf: 80, fl: 8.4 } },
+  { g: "Caffeine", n: "Pre-workout", sv: "1 scoop", per: { kcal: 5, caf: 200, fl: 10 } },
+  { g: "Protein", n: "Premier Protein shake", sv: "11 fl oz", per: { kcal: 160, p: 30, c: 5, f: 3, fb: 1, su: 1, na: 350, ca: 500, k: 390, fl: 11 } },
+  { g: "Protein", n: "Whey protein in water", sv: "1 scoop", per: { kcal: 120, p: 24, c: 3, f: 1.5, su: 2, na: 110, ca: 120, k: 150, fl: 12 } },
+  { g: "Protein", n: "Fairlife Core Power", sv: "14 fl oz", per: { kcal: 170, p: 26, c: 8, f: 4.5, su: 6, na: 280, ca: 690, k: 690, fl: 14 } },
+  { g: "Protein", n: "Chocolate milk, low-fat", sv: "16 fl oz", per: { kcal: 320, p: 16, c: 52, f: 5, sf: 3, su: 48, as: 24, na: 300, ca: 600, k: 800, fl: 16 } },
+  { g: "Quick carbs", n: "Honey", sv: "1 tbsp", per: { kcal: 64, c: 17, su: 17, as: 17, k: 11 } },
+  { g: "Quick carbs", n: "Energy gel", sv: "1 packet", per: { kcal: 100, c: 22, su: 11, as: 11, na: 60, k: 40 } },
+  { g: "Quick carbs", n: "Orange juice", sv: "12 fl oz", per: { kcal: 165, c: 39, su: 33, k: 700, ca: 40, fl: 12 } }
+];
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const TYPES = { Water: 9.5, Erg: 11, Lift: 6, Cross: 8 }; // kcal/min for an 80 kg rower
+const HALL_ORDER = ["Dining Courts", "On-the-GO!", "Quick Bites"];
+
+// Foods a person can rule out. `al` = Purdue allergen tags; `kw` = name keywords, used always for
+// categories Purdue doesn't tag, and as a fallback when an item has no allergen data.
+const AVOID = [
+  { k: "seafood", l: "Seafood", al: ["Fish", "Shellfish"], kw: ["fish", "salmon", "tuna", "cod", "tilapia", "pollock", "shrimp", "crab", "lobster", "clam", "scallop", "calamari", "sushi", "seafood", "anchovy", "anchovies","swai", "catfish", "mahi", "halibut", "trout", "oyster", "mussel", "poke"], always: true },
+  { k: "dairy", l: "Dairy", al: ["Milk"], kw: ["cheese", "milk", "yogurt", "cream", "butter", "queso", "alfredo", "mozzarella", "parmesan", "cheddar", "ranch"] },
+  { k: "gluten", l: "Gluten", al: ["Gluten", "Wheat"], kw: ["bread", "bun", "pasta", "noodle", "pizza", "tortilla", "bagel", "wrap", "breaded", "biscuit", "pancake", "waffle", "cookie", "cake", "muffin", "croissant"] },
+  { k: "eggs", l: "Eggs", al: ["Eggs"], kw: ["egg", "omelet", "quiche"] },
+  { k: "peanuts", l: "Peanuts", al: ["Peanuts"], kw: ["peanut"] },
+  { k: "treenuts", l: "Tree nuts", al: ["Tree Nuts", "Coconut"], kw: ["almond", "walnut", "pecan", "cashew", "pistachio", "hazelnut", "coconut"] },
+  { k: "soy", l: "Soy", al: ["Soy"], kw: ["soy", "tofu", "edamame"] },
+  { k: "sesame", l: "Sesame", al: ["Sesame"], kw: ["sesame", "tahini"] },
+  { k: "pork", l: "Pork", al: [], kw: ["pork", "bacon", "ham", "sausage", "pepperoni", "chorizo", "prosciutto", "carnitas", "salami", "bratwurst"], always: true },
+  { k: "beef", l: "Beef", al: [], kw: ["beef", "burger", "steak", "meatball", "brisket", "barbacoa", "hamburger", "cheeseburger"], always: true }
+];
+// Chains with published nutrition that are common around campus; Claude knows their menus.
+const SPOTS = ["Chick-fil-A", "Chipotle", "Raising Cane's", "Panera Bread", "Qdoba", "Five Guys", "Jimmy John's", "Subway", "Potbelly", "Panda Express", "Noodles & Company", "McDonald's", "Wendy's", "Taco Bell", "Starbucks"];
+const MEAT_KW =["chicken", "turkey", "pork", "bacon", "ham", "sausage", "beef", "steak", "burger", "meatball", "fish", "salmon", "tuna", "shrimp", "pepperoni", "chorizo", "brisket", "carnitas", "wings"];
+const hasWord = (name, kws) => kws.some(k => new RegExp("\\b" + k + "(s|es)?\\b", "i").test(name));
+// Why an item conflicts with the person's food preferences ("" when it's fine).
+function conflict(i) {
+  const pr = P(), name = i.n || "", reasons = [];
+  for (const a of AVOID) {
+    if (!(pr.avoid || []).includes(a.k)) continue;
+    const tagged = Array.isArray(i.al) && a.al.some(x => i.al.includes(x));
+    if (tagged || ((a.always || !Array.isArray(i.al)) && hasWord(name, a.kw))) reasons.push(a.l.toLowerCase());
+  }
+  if (pr.diet === "vegan" && !(i.vgn || (i.veg && Array.isArray(i.al) && !i.al.includes("Milk") && !i.al.includes("Eggs")))) reasons.push("not vegan");
+  else if (pr.diet === "vegetarian" && (i.veg === false || hasWord(name, MEAT_KW))) reasons.push("not vegetarian");
+  for (const d of dislikes()) if (name.toLowerCase().includes(d)) reasons.push(d);
+  return reasons.join(", ");
+}
+const dislikes = () => String(P().dislikes || "").toLowerCase().split(",").map(s => s.trim()).filter(s => s.length > 1);
+function prefsLine() {
+  const pr = P(), parts = [];
+  if (pr.diet && pr.diet !== "any") parts.push(pr.diet);
+  const av = AVOID.filter(a => (pr.avoid || []).includes(a.k)).map(a => a.l.toLowerCase());
+  if (av.length) parts.push("no " + av.join(", no "));
+  if (dislikes().length) parts.push("won't eat: " + dislikes().join(", "));
+  return parts.length ? `Food preferences (hard rules, never suggest anything that breaks them): ${parts.join("; ")}.` : "";
+}
+
+const EXAMPLE = {
+  example: true, weight: 180, ft: 6, inch: 2, age: 20, sex: "M", goal: "build", category: "open", kcalOverride: "", pOverride: "",
+  diet: "any", avoid: [], dislikes: "",
+  sessions: [
+    { days: [1, 2, 3, 4, 5], start: "06:00", end: "08:00", type: "Water" },
+    { days: [1, 3, 5], start: "15:30", end: "16:30", type: "Lift" },
+    { days: [6], start: "07:00", end: "09:30", type: "Water" }
+  ]
+};
+
+/* ---------- state ---------- */
+const S = {
+  view: "today", date: today(), db: null, uid: null, sample: null, canImg: false,
+  profile: null, days: {}, menus: {}, menuState: {},
+  draft: { hall: "", meal: "", spot: SPOTS[0], items: [], photos: [], note: "", time: "", aiNote: "" },
+  out: { spot: SPOTS[0], text: "", err: "" },
+  busy: null, coach: { text: "", err: "" }, plan: { text: "", err: "", meal: "" },
+  setup: null, confirmDel: null, search: "",
+  chat: { msgs: [], draft: "", ctl: null }, canTools: false
+};
+const P = () => S.profile || EXAMPLE;
+
+/* ---------- storage: db when available, otherwise this browser ---------- */
+const chains = {};
+function queue(id, fn) { const p = (chains[id] || Promise.resolve()).then(fn, fn); chains[id] = p.catch(() => {}); return p; }
+async function put(id, data) {
+  if (S.db && S.uid) {
+    return queue(id, () => S.db.collection("data/users/" + S.uid).doc(id).set(data))
+      .catch(e => toast(e && e.code === "quota_exceeded" ? "Storage is full. Delete old days to keep logging." : "Couldn't save. Check your connection and try again."));
+  }
+  try { localStorage.setItem("sf:" + id, JSON.stringify(data)); } catch {}
+}
+function loadLocal() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i); if (!k.startsWith("sf:")) continue;
+      const v = JSON.parse(localStorage.getItem(k)); const id = k.slice(3);
+      if (id === "profile") S.profile = v; else if (id === "chat") S.chat.msgs = v.msgs || []; else if (id.startsWith("day-")) S.days[id.slice(4)] = v;
+    }
+  } catch {}
+}
+
+async function loadMenus(date) {
+  if (S.menus[date] || S.menuState[date] === "loading") return;
+  if (!S.db) { S.menuState[date] = "none"; return; }
+  S.menuState[date] = "loading";
+  try {
+    const snap = await S.db.collection("menus").where("date", "==", date).get();
+    const docs = snap.docs.map(d => d.data()).filter(d => d.meals && d.meals.length);
+    docs.sort((a, b) => (HALL_ORDER.indexOf(a.kind) - HALL_ORDER.indexOf(b.kind)) || a.hall.localeCompare(b.hall));
+    S.menus[date] = docs; S.menuState[date] = "ok";
+  } catch { S.menuState[date] = "error"; }
+  render();
+}
+
+/* ---------- nutrition math ---------- */
+function sessionsOn(date) { const d = dow(date); return (P().sessions || []).filter(s => s.days.includes(d)).sort((a, b) => toMin(a.start) - toMin(b.start)); }
+function targets(date) {
+  const pr = P(); const kg = pr.weight / 2.2046; const cm = (pr.ft * 12 + Number(pr.inch || 0)) * 2.54;
+  const bmr = 10 * kg + 6.25 * cm - 5 * pr.age + (pr.sex === "F" ? -161 : 5);
+  const sess = sessionsOn(date);
+  let mins = 0, train = 0;
+  for (const s of sess) { const m = Math.max(0, toMin(s.end) - toMin(s.start)); mins += m; train += m * (TYPES[s.type] || 8) * kg / 80; }
+  // Energy from expenditure; protein fixed per kg; fat ~25% (never under 0.8 g/kg); carbs fill the rest,
+  // so carbs rise and fall with training volume.
+  let kcal = bmr * 1.4 + train + ({ build: 350, maintain: 0, lean: -400 }[pr.goal] || 0);
+  let p = kg * (pr.goal === "maintain" ? 1.8 : 2.1);
+  if (Number(pr.pOverride) > 0) p = Number(pr.pOverride);
+  if (Number(pr.kcalOverride) > 0) kcal = Number(pr.kcalOverride);
+  const f = Math.max(kg * 0.8, kcal * 0.25 / 9);
+  const c = Math.max(kg * 3, (kcal - p * 4 - f * 9) / 4);
+  return { kcal, p, c, f, fb: Math.min(50, Math.max(30, kcal / 1000 * 14)), ca: 1000, fe: pr.sex === "F" ? 18 : 8, as: kcal * 0.1 / 4, na: mins ? 3000 : 2300,
+    k: pr.sex === "F" ? 2600 : 3400, caf: 400, fl: pr.weight * 0.4 + mins / 60 * 16, mins, sess, kg };
+}
+function itemTotals(it) { const o = {}; for (const k of NK) o[k] = (it.per[k] || 0) * it.qty; return o; }
+function sumItems(items) { const o = Object.fromEntries(NK.map(k => [k, 0])); for (const it of items) { const t = itemTotals(it); for (const k of NK) o[k] += t[k]; } return o; }
+function dayTotals(date) { const d = S.days[date]; return sumItems((d ? d.entries : []).flatMap(e => e.items)); }
+function per(src) { const o = {}; for (const k of NK) if (src[k] != null && !isNaN(src[k])) o[k] = Number(src[k]); return o; }
+
+function mealNames(docs) { const s = new Set(); docs.forEach(d => d.meals.forEach(m => s.add(m.name))); return [...s]; }
+function pickMealByTime(meals) {
+  if (!meals.length) return "";
+  const n = toMin(nowHM());
+  const open = meals.find(m => m.start && toMin(m.start) <= n && n <= toMin(m.end)); if (open) return open.name;
+  const next = meals.filter(m => m.start && toMin(m.start) > n).sort((a, b) => toMin(a.start) - toMin(b.start))[0];
+  return (next || meals[meals.length - 1]).name;
+}
+function mealsSpan(docs) { // union of meals with typical hours
+  const map = {};
+  docs.forEach(d => d.meals.forEach(m => { if (!map[m.name]) map[m.name] = { name: m.name, start: m.start, end: m.end }; }));
+  return Object.values(map).sort((a, b) => toMin(a.start) - toMin(b.start));
+}
+
+/* ---------- Claude ---------- */
+const ERR = {
+  not_granted: "Claude isn't allowed for this page. Open the page's permissions to turn it on.",
+  sampling_disabled: "Claude isn't available on this account.",
+  rate_limited: "You've hit a usage limit. Try again in a bit.",
+  image_rejected: "That photo couldn't be read. Try a JPG or PNG.",
+  images_unavailable: "Photos can't be sent from this view. Describe the meal instead.",
+  refused: "Claude couldn't answer that. Try a different photo or description.",
+  invalid_json: "Claude's answer came back garbled. Tap Analyze again.",
+  session_expired: "Sign in to Claude again, then retry.",
+  prompt_too_large: "Too much to send at once. Try fewer photos."
+};
+const errCopy = e => ERR[e && e.code] || "Something went wrong reaching Claude. Try again.";
+
+function profileLine() {
+  const pr = P(); const t = targets(S.date);
+  return `Athlete: collegiate rower at Purdue (West Lafayette, IN), ${pr.sex === "F" ? "female" : "male"}, ${pr.age} y, ${pr.weight} lb, ${pr.ft}'${pr.inch}", ${pr.category === "light" ? "lightweight" : "openweight"}, goal: ${({ build: "build muscle/power", maintain: "maintain", lean: "lean out slowly" })[pr.goal]}. Peak target: racing shape by May 2027.
+Daily targets for ${S.date}: ${fmt(t.kcal)} kcal, protein ${r0(t.p)} g, carbs ${r0(t.c)} g, fat ${r0(t.f)} g, fiber ${r0(t.fb)} g, calcium ${t.ca} mg, iron ${t.fe} mg.
+${prefsLine()}`;
+}
+function scheduleLine(date) {
+  const s = sessionsOn(date);
+  return s.length ? s.map(x => `${x.type} ${clock(x.start)}–${clock(x.end)}`).join(", ") : "rest day";
+}
+// `okOnly` drops items that break the person's food preferences (for recommendations, not for logging).
+function menuLines(doc, meal, cap = 60, okOnly = false) {
+  const m = doc.meals.find(x => x.name === meal); if (!m) return [];
+  return m.items.filter(i => i.kcal >= 15 && !(okOnly && conflict(i))).slice(0, cap);
+}
+const itemLine = (i, idx) => `${idx != null ? idx + " | " : ""}${i.st} | ${i.n} | ${i.sv || "1 serving"} | ${r0(i.kcal)} kcal | P ${r0(i.p)} | C ${r0(i.c)} | F ${r0(i.f)}`;
+
+function md(text) {
+  const lines = esc(text).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").split("\n");
+  let html = "", inList = false;
+  for (let l of lines) {
+    const li = l.match(/^\s*[-*•]\s+(.*)/);
+    if (li) { if (!inList) { html += "<ul>"; inList = true; } html += "<li>" + li[1] + "</li>"; continue; }
+    if (inList) { html += "</ul>"; inList = false; }
+    l = l.replace(/^#+\s*(.*)/, "<b>$1</b>");
+    if (l.trim()) html += "<p>" + l + "</p>";
+  }
+  return html + (inList ? "</ul>" : "");
+}
+
+/* ---------- views ---------- */
+function header(title) {
+  const isToday = S.date === today();
+  return `<div class="top"><div><div class="brand">Stroke Fuel</div><h1>${esc(title)}</h1></div>
+    <div class="datenav"><button aria-label="Previous day" data-act="day" data-n="-1">‹</button>
+    <button data-act="today" ${isToday ? "disabled" : ""}>${isToday ? "Today" : esc(niceDate(S.date))}</button>
+    <button aria-label="Next day" data-act="day" data-n="1">›</button></div></div>`;
+}
+function exampleNotice() {
+  return S.profile ? "" : `<div class="notice">These targets use <b>example numbers</b> (180 lb rower, sample practice times). <button class="ghost" data-act="go" data-v="setup">Enter your stats</button></div>`;
+}
+function bar(val, tgt, color) { return `<div class="bar"><i style="width:${clamp(val / (tgt || 1) * 100, 0, 100)}%;--c:${color}"></i></div>`; }
+
+function viewToday() {
+  const t = targets(S.date), x = dayTotals(S.date), day = S.days[S.date];
+  const left = t.kcal - x.kcal;
+  const macro = (name, k, color) => `<div class="macro"><div class="spread small"><span>${name}</span><span class="num">${r0(x[k])} / ${r0(t[k])} g</span></div>${bar(x[k], t[k], color)}</div>`;
+  const micro = (name, val, tgt, unit, mode) => {
+    let pill = "";
+    if (mode === "limit") pill = val > tgt ? `<span class="pill warn">over</span>` : "";
+    else if (val >= tgt) pill = `<span class="pill good">hit</span>`;
+    return `<div class="micro"><span class="label">${name}</span><b>${r0(val)}<span class="muted tiny"> / ${fmt(tgt)}${unit}</span></b>${pill}</div>`;
+  };
+
+  // timeline
+  const ev = [];
+  const kg = t.kg;
+  for (const s of t.sess) {
+    const st = toMin(s.start), en = toMin(s.end);
+    const early = st < 8 * 60;
+    ev.push({ m: early ? st - 45 : st - 150, kind: "window", html: early
+      ? `<b>Pre-practice</b><div class="small muted">Early start: a quick ~${r0(kg * 0.5)} g carb snack 30–45 min before (banana, bagel, toast + honey). Last night's dinner is your real fuel.</div>`
+      : `<b>Pre-practice window</b><div class="small muted">1–3 h before: about ${r0(kg)} g carbs, moderate protein, go easy on fat and fiber.</div>` });
+    ev.push({ m: st, kind: "practice", html: `<b>${esc(s.type)}</b> <span class="muted small">${clock(s.start)}–${clock(s.end)}</span>` });
+    ev.push({ m: en + 1, kind: "window", html: `<b>Recovery window</b><div class="small muted">Within 60 min: ~${r0(kg * 0.3)} g protein + ~${r0(kg)} g carbs.</div>` });
+  }
+  for (const e of (day ? day.entries : [])) {
+    const tot = sumItems(e.items);
+    const confirming = S.confirmDel === e.id;
+    ev.push({ m: toMin(e.time), kind: "meal", html: `<div class="spread"><b>${esc(e.meal || "Meal")}${e.hall ? " · " + esc(e.hall) : ""}</b>
+      <button class="ghost small" data-act="del" data-id="${e.id}">${confirming ? "Tap to confirm" : "Delete"}</button></div>
+      <div class="small muted num">${fmt(tot.kcal)} kcal · P ${r0(tot.p)} · C ${r0(tot.c)} · F ${r0(tot.f)}</div>
+      <div class="entry-items">${e.items.map((it, i) => `<div class="it"><span class="name small">${esc(it.n)} <span class="muted tiny">${esc(it.sv || "")}</span></span>
+        <span class="stepper"><button aria-label="Less" data-act="eqty" data-id="${e.id}" data-i="${i}" data-d="-0.5">−</button><span>${it.qty}×</span><button aria-label="More" data-act="eqty" data-id="${e.id}" data-i="${i}" data-d="0.5">+</button></span></div>`).join("")}</div>` });
+  }
+  ev.sort((a, b) => a.m - b.m);
+  const tl = ev.length ? `<div class="tl">${ev.map(e => `<div class="tl-row"><span class="t">${clock(toHM(e.m))}</span><span class="dot ${e.kind}"></span><div class="body">${e.html}</div></div>`).join("")}</div>`
+    : `<p class="muted small">Nothing logged yet and no practice scheduled. Tap <b>Log</b> to add a meal.</p>`;
+
+  // week
+  const wk = [];
+  for (let i = -6; i <= 0; i++) {
+    const d = addDays(S.date, i), tt = targets(d), xx = dayTotals(d);
+    wk.push(`<div class="wk ${i === 0 ? "sel" : ""}"><div class="col" title="${fmt(xx.kcal)} kcal"><i style="height:${clamp(xx.kcal / tt.kcal * 85, 0, 100)}%"></i><s style="bottom:85%"></s></div>
+      <span class="label">${DAYS[dow(d)][0]}</span><span class="tiny num muted">${r0(xx.p)}g</span></div>`);
+  }
+
+  return `${header("Fuel")}${exampleNotice()}
+  <section class="card gauge" aria-label="Today's totals">
+    <div class="spread"><span class="label">${t.sess.length ? r0(t.mins) + " min training · " + esc(scheduleLine(S.date)) : "Rest day"}</span></div>
+    <div class="kcal"><span class="big num">${fmt(x.kcal)}</span><span class="muted">/ ${fmt(t.kcal)} kcal</span>
+      <span class="pill ${left < -150 ? "warn" : ""}">${left >= 0 ? fmt(left) + " to go" : fmt(-left) + " over"}</span></div>
+    ${bar(x.kcal, t.kcal, "var(--accent)")}
+    ${macro("Protein", "p", "var(--pro)")}${macro("Carbs", "c", "var(--carb)")}${macro("Fat", "f", "var(--fat)")}
+    <div class="micros">${micro("Fiber", x.fb, r0(t.fb), "g")}${micro("Calcium", x.ca, t.ca, "mg")}${micro("Iron", x.fe, t.fe, "mg")}${micro("Sodium", x.na, t.na, "mg")}${micro("Potassium", x.k, t.k, "mg")}${micro("Fluids", x.fl, r0(t.fl), " oz")}${micro("Caffeine", x.caf, t.caf, "mg", "limit")}${micro("Added sugar", x.as, r0(t.as), "g", "limit")}</div>
+    <p class="tiny muted">Fluids count drinks only. Potassium is partly tracked, since dining-hall labels don't list it.</p>
+  </section>
+  <section class="card"><h2>Day plan</h2>${tl}</section>
+  <section class="card"><div class="spread"><h2>Coach</h2><button class="primary" data-act="coach" ${S.busy || !S.sample ? "disabled" : ""}>${S.coach.text ? "Refresh" : "What should I eat next?"}</button></div>
+    ${!S.sample ? `<p class="muted small">Coaching needs Claude, which isn't available in this view.</p>` :
+      S.busy === "coach" && !S.coach.text ? `<p class="thinking">Reading your day and today's menus…</p>` :
+      S.coach.text ? `<div class="ai">${md(S.coach.text)}</div>${S.busy ? "" : `<button class="ghost" data-act="discuss" data-v="coach" style="justify-self:start">Don't like it? Chat with coach</button>`}` : S.coach.err ? `<p class="small" style="color:var(--warn)">${esc(S.coach.err)}</p>` :
+      `<p class="muted small">Looks at what you've eaten, your next practice and what's on at each dining court, then tells you what to eat and where.</p>`}
+  </section>
+  <section class="card"><div class="spread"><h2>Last 7 days</h2><span class="tiny muted">bar = kcal vs target · number = protein</span></div><div class="week">${wk.join("")}</div></section>`;
+}
+
+function hallOptions(docs) {
+  const groups = {};
+  docs.forEach(d => (groups[d.kind] = groups[d.kind] || []).push(d.hall));
+  return Object.entries(groups).map(([k, hs]) => `<optgroup label="${esc(k)}">${hs.map(h => `<option ${S.draft.hall === h ? "selected" : ""}>${esc(h)}</option>`).join("")}</optgroup>`).join("")
+    + `<option value="__other" ${S.draft.hall === "__other" ? "selected" : ""}>Restaurant, snack or home</option>`;
+}
+function ensureDraftPlace(docs) {
+  const d = S.draft;
+  if (!d.hall || (d.hall !== "__other" && !docs.find(x => x.hall === d.hall))) d.hall = docs.length ? docs[0].hall : "__other";
+  const doc = docs.find(x => x.hall === d.hall);
+  const meals = doc ? doc.meals : [];
+  if (!meals.find(m => m.name === d.meal)) d.meal = pickMealByTime(meals);
+  return doc;
+}
+function menuListHTML(doc) {
+  if (!doc) return "";
+  const m = doc.meals.find(x => x.name === S.draft.meal); if (!m) return "";
+  const q = S.search.trim().toLowerCase();
+  let last = "", out = "";
+  m.items.forEach((i, idx) => {
+    if (q && !(i.n.toLowerCase().includes(q) || i.st.toLowerCase().includes(q))) return;
+    if (i.st !== last) { out += `<div class="station label">${esc(i.st)}</div>`; last = i.st; }
+    const why = conflict(i);
+    out += `<div class="mi${why ? " avoid" : ""}"><div><div>${esc(i.n)}${why ? ` <span class="pill warn">${esc(why)}</span>` : ""}</div><div class="meta num">${esc(i.sv || "")} · ${r0(i.kcal)} kcal · P ${r0(i.p)} · C ${r0(i.c)} · F ${r0(i.f)}</div></div>
+      <button data-act="addmenu" data-i="${idx}" aria-label="Add ${esc(i.n)}">+ Add</button></div>`;
+  });
+  return out || `<p class="muted small">No matches.</p>`;
+}
+function viewLog() {
+  const docs = S.menus[S.date] || [];
+  const doc = ensureDraftPlace(docs);
+  const d = S.draft, other = d.hall === "__other";
+  const tot = sumItems(d.items);
+  const menuMsg = S.menuState[S.date] === "loading" ? "Loading menus…" : !docs.length ? "No dining menus loaded for this day. You can still log from a photo or description." : "";
+  return `${header("Log")}
+  ${drinksHTML()}
+  <section class="card"><h2>Log a meal</h2>
+    <div class="grid2"><label class="field"><span class="label">Where</span><select id="hall" data-act="hall">${hallOptions(docs)}</select></label>
+    ${other ? `<label class="field"><span class="label">Meal</span><select id="meal-o" data-act="mealo">${["Breakfast", "Lunch", "Dinner", "Snack"].map(m => `<option ${d.meal === m ? "selected" : ""}>${m}</option>`).join("")}</select></label>`
+      : `<label class="field"><span class="label">Meal</span><select id="meal" data-act="meal">${(doc ? doc.meals : []).map(m => `<option ${d.meal === m.name ? "selected" : ""}>${esc(m.name)}</option>`).join("")}</select></label>`}</div>
+    ${other ? `<label class="field"><span class="label">Restaurant</span><select id="spot" data-act="spot">${SPOTS.map(s => `<option ${d.spot === s ? "selected" : ""}>${esc(s)}</option>`).join("")}<option value="__any" ${d.spot === "__any" ? "selected" : ""}>Other place, snack or home food</option></select></label>
+      <div class="tiny muted">${d.spot === "__any" ? "Name the place in your description if it's a restaurant." : "Describe your order the way you'd say it at the counter. Claude uses " + esc(d.spot) + "'s published nutrition."}</div>` : ""}
+    ${doc && !other ? `<div class="tiny muted">${esc(doc.hall)} ${esc(d.meal)}: ${clock((doc.meals.find(m => m.name === d.meal) || {}).start)}–${clock((doc.meals.find(m => m.name === d.meal) || {}).end)} on ${esc(niceDate(S.date))}</div>` : ""}
+    ${menuMsg ? `<div class="tiny muted">${menuMsg}</div>` : ""}
+  </section>
+  <section class="card"><h2>Snap your plate</h2>
+    ${S.canImg ? `<label class="drop" for="photo"><input id="photo" type="file" accept="image/*" multiple data-act="photo"><b>${d.photos.length ? "Add another photo" : "Take or choose a photo"}</b><span class="tiny muted">One or more plates, bowls, drinks</span></label>
+      ${d.photos.length ? `<div class="photos">${d.photos.map((p, i) => `<img src="${p.url}" alt="Plate photo ${i + 1}">`).join("")}<button class="ghost" data-act="clearphotos">Clear</button></div>` : ""}` : ""}
+    <label class="field"><span class="label">${S.canImg ? "Anything the photo won't show?" : "Describe what you ate"}</span>
+      <textarea id="note" data-act="note" placeholder="${other ? "e.g. Chipotle burrito bowl, double chicken, white rice, black beans, no sour cream" : "e.g. two plates, the chicken was a big portion, chocolate milk"}">${esc(d.note)}</textarea></label>
+    <button class="primary" data-act="analyze" ${S.busy || !S.sample ? "disabled" : ""}>${S.busy === "analyze" ? "Reading your plate…" : "Analyze"}</button>
+    ${!S.sample ? `<p class="tiny muted">Photo analysis needs Claude, which isn't available in this view. Add items from the menu below.</p>` : ""}
+    ${d.aiNote ? `<p class="small muted">${esc(d.aiNote)}</p>` : ""}
+  </section>
+  ${d.items.length ? `<section class="card"><div class="spread"><h2>This meal</h2><label class="row small"><span class="muted">at</span><input id="time" type="time" data-act="time" value="${esc(d.time || nowHM())}" style="width:auto"></label></div>
+    <div class="entry-items">${d.items.map((it, i) => `<div class="it"><span class="name">${esc(it.n)} <span class="muted tiny">${esc(it.sv || "")}${it.src === "est" ? " · estimate" : ""}</span><br><span class="tiny muted num">${r0(it.per.kcal * it.qty)} kcal · P ${r0((it.per.p || 0) * it.qty)} · C ${r0((it.per.c || 0) * it.qty)} · F ${r0((it.per.f || 0) * it.qty)}</span></span>
+      <span class="stepper"><button aria-label="Less" data-act="dqty" data-i="${i}" data-d="-0.5">−</button><span>${it.qty}×</span><button aria-label="More" data-act="dqty" data-i="${i}" data-d="0.5">+</button></span></div>`).join("")}</div>
+  </section>` : ""}
+  ${doc && !other ? `<section class="card"><h2>Add from the menu</h2>
+    <input id="search" type="search" placeholder="Search ${esc(doc.hall)} ${esc(d.meal)}" value="${esc(S.search)}" data-act="search">
+    <div class="menu-list" id="menulist">${menuListHTML(doc)}</div></section>` : ""}
+  ${d.items.length ? `<div class="tray"><div><span class="num small">${d.items.length} item${d.items.length > 1 ? "s" : ""} · ${fmt(tot.kcal)} kcal · P ${r0(tot.p)}g</span><button data-act="save">Save meal</button></div></div>` : ""}`;
+}
+
+function hallScores(meal, rem, t) {
+  const docs = (S.menus[S.date] || []).filter(d => d.kind === "Dining Courts");
+  const wp = clamp(rem.p / t.p, 0.15, 1), wc = clamp(rem.c / t.c, 0.15, 1);
+  return docs.map(doc => {
+    const m = doc.meals.find(x => x.name === meal); if (!m) return null;
+    const it = m.items.filter(i => i.kcal > 0 && !conflict(i));
+    const prot = it.filter(i => i.p >= 12).map(i => ({ i, s: i.p * Math.min(1, (i.p * 4 / i.kcal) / 0.35) })).sort((a, b) => b.s - a.s).slice(0, 3);
+    const carb = it.filter(i => i.c >= 20 && i.f * 9 <= i.kcal * 0.3).sort((a, b) => b.c - a.c).slice(0, 3).map(i => ({ i }));
+    const score = wp * prot.reduce((a, b) => a + b.s, 0) + 0.5 * wc * carb.reduce((a, b) => a + b.i.c, 0);
+    return { doc, m, prot, carb, score };
+  }).filter(Boolean).sort((a, b) => b.score - a.score);
+}
+function viewWhere() {
+  const docs = S.menus[S.date] || [];
+  const t = targets(S.date), x = dayTotals(S.date);
+  const rem = { kcal: Math.max(0, t.kcal - x.kcal), p: Math.max(0, t.p - x.p), c: Math.max(0, t.c - x.c), f: Math.max(0, t.f - x.f) };
+  const meals = mealsSpan(docs.filter(d => d.kind === "Dining Courts"));
+  if (!meals.find(m => m.name === S.plan.meal)) S.plan.meal = pickMealByTime(meals);
+  const ranked = hallScores(S.plan.meal, rem, t);
+  return `${header("Where to eat")}
+  <section class="card"><span class="label">Still needed ${S.date === today() ? "today" : "on " + esc(niceDate(S.date))}</span>
+    <div class="grid2 num small"><div><b>${fmt(rem.kcal)}</b> kcal</div><div style="color:var(--pro)"><b>${r0(rem.p)}</b> g protein</div><div style="color:var(--carb)"><b>${r0(rem.c)}</b> g carbs</div><div style="color:var(--fat)"><b>${r0(rem.f)}</b> g fat</div></div>
+    ${meals.length ? `<div class="seg" role="group" aria-label="Meal">${meals.map(m => `<button data-act="pmeal" data-v="${esc(m.name)}" class="${m.name === S.plan.meal ? "on" : ""}">${esc(m.name)}</button>`).join("")}</div>` : ""}
+  </section>
+  ${!docs.length ? `<section class="card"><p class="muted">${S.menuState[S.date] === "loading" ? "Loading menus…" : "No menus loaded for " + esc(niceDate(S.date)) + " yet. Menus refresh every week."}</p></section>` : ""}
+  ${docs.length ? `<section class="card"><div class="spread"><h2>Build my plate</h2><button class="primary" data-act="plan" ${S.busy || !S.sample ? "disabled" : ""}>${S.plan.text ? "Redo" : "Ask Claude"}</button></div>
+    ${S.busy === "plan" && !S.plan.text ? `<p class="thinking">Comparing ${esc(S.plan.meal)} at every dining court…</p>` : S.plan.text ? `<div class="ai">${md(S.plan.text)}</div>${S.busy ? "" : `<button class="ghost" data-act="discuss" data-v="plan" style="justify-self:start">Swap something or add to it</button>`}` : S.plan.err ? `<p class="small" style="color:var(--warn)">${esc(S.plan.err)}</p>` : `<p class="muted small">Picks the best dining court for ${esc(S.plan.meal)} and the exact plate to fill your gap, timed around practice.</p>`}
+  </section>` : ""}
+  <section class="card"><div class="spread"><h2>Eat out instead</h2></div>
+    <p class="muted small">Not feeling the dining courts? Get an order that fills the same gap.</p>
+    <div class="row"><select id="outspot" data-act="outspot" style="flex:1">${SPOTS.map(s => `<option ${S.out.spot === s ? "selected" : ""}>${esc(s)}</option>`).join("")}</select>
+      <button class="primary" data-act="out" ${S.busy || !S.sample ? "disabled" : ""}>What should I order?</button></div>
+    ${S.busy === "out" && !S.out.text ? `<p class="thinking">Building your ${esc(S.out.spot)} order…</p>` : S.out.text ? `<div class="ai">${md(S.out.text)}</div>${S.busy ? "" : `<button class="ghost" data-act="discuss" data-v="out" style="justify-self:start">Change the order</button>`}` : S.out.err ? `<p class="small" style="color:var(--warn)">${esc(S.out.err)}</p>` : ""}
+  </section>
+  ${ranked.map((h, n) => `<section class="card hall"><div class="spread"><div><h3>${esc(h.doc.hall)}</h3><span class="tiny muted">${esc(h.m.name)} ${clock(h.m.start)}–${clock(h.m.end)}</span></div><span class="rank">${n + 1}</span></div>
+    <div class="picks"><span class="label" style="color:var(--pro)">Protein</span>${h.prot.map(({ i }) => `<div><span>${esc(i.n)}</span><span class="num muted">${r0(i.p)} g · ${r0(i.kcal)}</span></div>`).join("") || `<div class="muted">Slim pickings</div>`}</div>
+    <div class="picks"><span class="label" style="color:var(--carb)">Carbs</span>${h.carb.map(({ i }) => `<div><span>${esc(i.n)}</span><span class="num muted">${r0(i.c)} g · ${r0(i.kcal)}</span></div>`).join("") || `<div class="muted">Slim pickings</div>`}</div>
+  </section>`).join("")}`;
+}
+
+function viewSetup() {
+  if (!S.setup) S.setup = { diet: "any", avoid: [], dislikes: "", ...JSON.parse(JSON.stringify(P())) };
+  const s = S.setup;
+  const seg = (key, opts) => `<div class="seg" role="group">${opts.map(([v, l]) => `<button data-act="seg" data-k="${key}" data-v="${v}" class="${s[key] === v ? "on" : ""}">${l}</button>`).join("")}</div>`;
+  const t = (() => { const keep = S.profile; S.profile = { ...s, weight: Number(s.weight) || 0, age: Number(s.age) || 0 }; const r = targets(S.date); S.profile = keep; return r; })();
+  return `<div class="top"><div><div class="brand">Stroke Fuel</div><h1>You & practice</h1></div></div>
+  <section class="card"><h2>Body</h2>
+    <div class="grid3"><label class="field"><span class="label">Weight (lb)</span><input id="weight" inputmode="decimal" data-k="weight" value="${esc(s.weight)}"></label>
+      <label class="field"><span class="label">Height (ft)</span><input id="ft" inputmode="numeric" data-k="ft" value="${esc(s.ft)}"></label>
+      <label class="field"><span class="label">(in)</span><input id="inch" inputmode="numeric" data-k="inch" value="${esc(s.inch)}"></label>
+      <label class="field"><span class="label">Age</span><input id="age" inputmode="numeric" data-k="age" value="${esc(s.age)}"></label></div>
+    <span class="label">Sex</span>${seg("sex", [["M", "Male"], ["F", "Female"]])}
+    <span class="label">Category</span>${seg("category", [["open", "Openweight"], ["light", "Lightweight"]])}
+    <span class="label">Goal until May 2027</span>${seg("goal", [["build", "Build"], ["maintain", "Maintain"], ["lean", "Lean out"]])}
+  </section>
+  <section class="card"><h2>Food preferences</h2>
+    <p class="small muted">Recommendations and plate plans will never include these. Menu items that conflict are flagged when you log, in case you eat them anyway.</p>
+    <span class="label">Diet</span>${seg("diet", [["any", "Anything"], ["vegetarian", "Vegetarian"], ["vegan", "Vegan"]])}
+    <span class="label">Don't eat</span>
+    <div class="chips" role="group" aria-label="Foods to avoid">${AVOID.map(a => `<button data-act="avoid" data-k="${a.k}" class="${s.avoid.includes(a.k) ? "on" : ""}" aria-pressed="${s.avoid.includes(a.k)}">${s.avoid.includes(a.k) ? "✕ " : ""}${a.l}</button>`).join("")}</div>
+    <label class="field"><span class="label">Anything else? (comma separated)</span><input id="dislikes" data-k="dislikes" placeholder="e.g. mushrooms, olives, spicy" value="${esc(s.dislikes)}"></label>
+  </section>
+  <section class="card"><div class="spread"><h2>Practice schedule</h2><button data-act="addsess">+ Session</button></div>
+    ${s.sessions.map((x, i) => `<div class="sess"><div class="days">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button data-act="sday" data-i="${i}" data-d="${d}" class="${x.days.includes(d) ? "on" : ""}">${DAYS[d]}</button>`).join("")}</div>
+      <div class="grid3"><label class="field"><span class="label">Start</span><input id="st${i}" type="time" data-s="${i}" data-f="start" value="${esc(x.start)}"></label>
+      <label class="field"><span class="label">End</span><input id="en${i}" type="time" data-s="${i}" data-f="end" value="${esc(x.end)}"></label>
+      <label class="field"><span class="label">Type</span><select id="ty${i}" data-s="${i}" data-f="type">${Object.keys(TYPES).map(k => `<option ${x.type === k ? "selected" : ""}>${k}</option>`).join("")}</select></label></div>
+      <button class="ghost small" data-act="rmsess" data-i="${i}" style="justify-self:start">Remove</button></div>`).join("") || `<p class="muted small">No sessions yet.</p>`}
+  </section>
+  <section class="card"><h2>Targets</h2>
+    <p class="small muted">On a ${r0(t.mins)}-minute training day (${esc(DAYS[dow(S.date)])}): <b class="num">${fmt(t.kcal)}</b> kcal, <b class="num">${r0(t.p)}</b> g protein, <b class="num">${r0(t.c)}</b> g carbs, <b class="num">${r0(t.f)}</b> g fat. Carbs scale with training minutes each day.</p>
+    <div class="grid2"><label class="field"><span class="label">Calories override</span><input id="ko" inputmode="numeric" data-k="kcalOverride" placeholder="auto" value="${esc(s.kcalOverride)}"></label>
+    <label class="field"><span class="label">Protein override (g)</span><input id="po" inputmode="numeric" data-k="pOverride" placeholder="auto" value="${esc(s.pOverride)}"></label></div>
+    <p class="tiny muted">Use overrides if your team dietitian gave you numbers.</p>
+  </section>
+  <button class="primary" data-act="savesetup">Save</button>`;
+}
+
+/* ---------- coach chat ---------- */
+function viewChat() {
+  const c = S.chat;
+  const starters = ["I don't like what you picked. Swap it?", "Can I add something to my plate?", "What should I eat before practice tomorrow?", "Am I getting enough protein today?"];
+  const msgs = c.msgs.map(m => m.role === "user" ? `<div class="msg me">${esc(m.content)}</div>`
+    : m.role === "sys" ? `<div class="msg sys">${esc(m.content)}</div>`
+    : `<div class="msg coach ai">${m.content ? md(m.content) : `<span class="thinking">Thinking…</span>`}</div>`).join("");
+  return `<div class="top"><div><div class="brand">Stroke Fuel</div><h1>Coach</h1></div>${c.msgs.length ? `<button class="ghost" data-act="newchat">New chat</button>` : ""}</div>
+  ${!S.sample ? `<div class="notice">Chat needs Claude, which isn't available in this view.</div>` : ""}
+  <div class="chat" id="chatlog">
+    ${c.msgs.length ? "" : `<div class="msg coach ai"><p>I can see what you've eaten today, your practice times, and every dining court's menu. Tell me if you don't like a dish, want to add something, or need a swap.</p></div>
+      <div class="starters">${starters.map(s => `<button data-act="starter" data-v="${esc(s)}">${esc(s)}</button>`).join("")}</div>`}
+    ${msgs}
+  </div>
+  <div class="composer"><form id="chatform"><label for="chatin" class="label" hidden>Message</label>
+    <textarea id="chatin" rows="1" placeholder="Message your coach" data-act="chatin">${esc(c.draft)}</textarea>
+    ${S.busy === "chat" ? `<button type="button" data-act="stopchat">Stop</button>` : `<button class="primary" type="submit" ${S.sample ? "" : "disabled"}>Send</button>`}</form></div>`;
+}
+function chatContext() {
+  const meals = mealsSpan((S.menus[S.date] || []).filter(d => d.kind === "Dining Courts"));
+  const next = pickMealByTime(meals);
+  return `You are the athlete's sports dietitian, chatting in a nutrition app. Be warm, direct and brief (a few sentences or a short list). Use the data below, which is current as of this message.
+${nextMealContext()}
+${next ? `Next dining-court meal: ${next}. Menus (station | item | serving | kcal | P | C | F), already filtered to foods they eat:\n${menusFor(next, 40)}` : "No dining menus are loaded for today."}
+When they dislike a dish, suggest a swap with similar protein/carbs from these menus. If they'd rather eat out, or the dining courts have nothing good, suggest a specific order at a nearby chain (${SPOTS.join(", ")}) using its published nutrition; they can log it under Log, "Restaurant, snack or home". When they want to add something, say whether it fits their remaining targets and practice timing, and roughly what it adds.${S.canTools ? " If they say they don't like or won't eat a specific food, call add_food_dislike so future recommendations skip it, and tell them you did." : ""}
+Never recommend anything that breaks their food preferences.`;
+}
+async function sendChat(text) {
+  const c = S.chat; text = text.trim();
+  if (!text || S.busy || !S.sample) return;
+  c.msgs.push({ role: "user", content: text }); c.draft = "";
+  const reply = { role: "assistant", content: "" }; c.msgs.push(reply);
+  S.busy = "chat"; render(); scrollChat();
+  const turns = c.msgs.filter(m => (m.role === "user" || m.role === "assistant") && m.content && m !== reply).slice(-16);
+  while (turns.length && turns[0].role !== "user") turns.shift();
+  const input = [{ role: "user", content: chatContext() }, ...turns.map(m => ({ role: m.role, content: m.content }))];
+  const opts = { signal: (c.ctl = new AbortController()).signal, onText: ({ text }) => { reply.content = text; if (S.view === "chat") { render(); scrollChat(); } } };
+  if (S.canTools) opts.tools = [{
+    name: "add_food_dislike",
+    description: "Save a food the athlete doesn't like or won't eat to their preferences so future recommendations leave it out. Returns the updated list.",
+    inputSchema: { type: "object", properties: { food: { type: "string", description: "Short food name, e.g. 'mushrooms' or 'pot roast'" } }, required: ["food"] },
+    execute: async ({ food }) => {
+      const f = String(food || "").trim().toLowerCase().slice(0, 40);
+      if (f.length < 2) throw new Error("No food given");
+      const cur = dislikes();
+      if (!cur.includes(f)) {
+        const prof = { ...JSON.parse(JSON.stringify(P())), dislikes: [...cur, f].join(", ") };
+        delete prof.example; S.profile = prof; await put("profile", prof);
+        c.msgs.splice(c.msgs.indexOf(reply), 0, { role: "sys", content: `Added "${f}" to foods you don't eat` });
+      }
+      return { dislikes: dislikes() };
+    }
+  }];
+  else opts.cache = false;
+  try { await S.sample(input, opts); }
+  catch (e) {
+    reply.content = (e && e.text) || "";
+    if (!(e && e.code === "cancelled")) c.msgs.push({ role: "sys", content: errCopy(e) });
+  } finally {
+    if (!reply.content) c.msgs.splice(c.msgs.indexOf(reply), 1);
+    S.busy = null; c.ctl = null; saveChat(); render(); scrollChat();
+  }
+}
+function scrollChat() { if (S.view === "chat") window.scrollTo(0, document.body.scrollHeight); }
+function saveChat() { put("chat", { msgs: S.chat.msgs.filter(m => m.content).slice(-40) }); }
+
+/* ---------- render ---------- */
+const ICONS = {
+  today: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>',
+  log: '<svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.2"/><path d="M9 6l1.2-2h3.6L15 6"/></svg>',
+  chat: '<svg viewBox="0 0 24 24"><path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H10l-4 3.5V16H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M8.5 9.5h7M8.5 12.5h4.5"/></svg>',
+  where: '<svg viewBox="0 0 24 24"><path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg>',
+  setup: '<svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>'
+};
+function render() {
+  if (S.view !== "setup") loadMenus(S.date);
+  const v = { today: viewToday, log: viewLog, chat: viewChat, where: viewWhere, setup: viewSetup }[S.view];
+  const chatFocused = S.view === "chat" && document.activeElement && document.activeElement.id === "chatin";
+  $("#app").innerHTML = v();
+  if (chatFocused) { const t = $("#chatin"); t.focus(); t.setSelectionRange(t.value.length, t.value.length); }
+  $("#tabs").innerHTML = [["today", "Today"], ["log", "Log"], ["chat", "Coach"], ["where", "Where"], ["setup", "Setup"]]
+    .map(([k, l]) => `<button data-act="go" data-v="${k}" class="${S.view === k ? "on" : ""}" aria-current="${S.view === k}">${ICONS[k]}${l}</button>`).join("");
+}
+let toastT;
+let toastUndo = null;
+function toast(msg, undo) {
+  const el = $("#toast"); el.textContent = msg; toastUndo = undo || null;
+  if (undo) { const b = document.createElement("button"); b.className = "ghost"; b.dataset.act = "undo"; b.textContent = "Undo"; b.style.cssText = "color:inherit;min-height:0;padding:0 0 0 12px;text-decoration:underline"; el.append(b); }
+  el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; toastUndo = null; }, undo ? 5000 : 3200);
+}
+// Log a drink in one tap. Taps within 45 minutes of each other share one "Drinks & fuel" entry.
+function quickAdd(i) {
+  const dk = DRINKS[i]; if (!dk) return;
+  const before = S.days[S.date] ? JSON.stringify(S.days[S.date]) : null;
+  const day = S.days[S.date] || (S.days[S.date] = { date: S.date, entries: [] });
+  const now = nowHM();
+  let en = day.entries.find(e => e.meal === "Drinks & fuel" && Math.abs(toMin(e.time) - toMin(now)) <= 45);
+  if (!en) { en = { id: uid36(), time: now, hall: "", meal: "Drinks & fuel", items: [] }; day.entries.push(en); }
+  const ex = en.items.find(x => x.n === dk.n);
+  if (ex) ex.qty += 1; else en.items.push({ n: dk.n, sv: dk.sv, qty: 1, per: { ...dk.per }, src: "quick" });
+  saveDay(S.date); S.coach = { text: "", err: "" }; render();
+  const date = S.date;
+  toast("Logged " + dk.n, () => { if (before) S.days[date] = JSON.parse(before); else S.days[date] = { date, entries: [] }; saveDay(date); render(); toast("Undone"); });
+}
+function drinksHTML() {
+  const groups = [...new Set(DRINKS.map(d => d.g))];
+  const key = p => p.caf ? `${p.caf} mg caf` : p.p ? `${p.p} g protein` : p.c ? `${p.c} g carbs` : p.na ? `${p.na} mg sodium` : `${p.fl} oz`;
+  return `<section class="card"><div class="spread"><h2>Drinks & quick fuel</h2><span class="tiny muted">Tap to log now</span></div>
+    ${groups.map(g => `<span class="label">${g}</span><div class="quick">${DRINKS.map((d, i) => d.g !== g ? "" : `<button data-act="quick" data-i="${i}"><b>${esc(d.n)}</b><span>${esc(d.sv)} · ${key(d.per)}</span></button>`).join("")}</div>`).join("")}
+    <p class="tiny muted">Typical label values. Different brand or amount? Snap it or describe it below under "Restaurant, snack or home".</p>
+  </section>`;
+}
+
+/* ---------- actions ---------- */
+function saveDay(date) { const d = S.days[date]; if (d) put("day-" + date, d); }
+
+async function analyze() {
+  const d = S.draft;
+  if (!d.photos.length && !d.note.trim()) { toast("Add a photo or describe the meal first."); return; }
+  const docs = S.menus[S.date] || [];
+  const doc = d.hall === "__other" ? null : docs.find(x => x.hall === d.hall);
+  const items = doc ? menuLines(doc, d.meal, 200) : [];
+  const where = doc ? `${doc.hall} dining at Purdue, ${d.meal}, ${S.date}`
+    : d.spot && d.spot !== "__any" ? `${d.spot} near Purdue (West Lafayette, IN)${d.meal ? ", " + d.meal : ""}. Use ${d.spot}'s published menu and nutrition information for their standard items and portions`
+    : `somewhere off the dining plan near Purdue (West Lafayette, IN)${d.meal ? ", " + d.meal : ""}`;
+  const prompt = `You estimate what a collegiate rower ate so they can track nutrition. Location: ${where}.
+${d.photos.length ? `The attached photo(s) show their plate(s).` : "No photo; use the description."}
+${d.note.trim() ? `Their note: "${d.note.trim()}"` : ""}
+${items.length ? `Menu served there (index | station | item | serving size | kcal | protein g | carbs g | fat g, per serving):\n${items.map((i, n) => itemLine(i, n)).join("\n")}\n\nMatch each food to a menu index when it plausibly is that item, and estimate how many listed servings are on the plate (e.g. 1.5). Use typical dining-hall portions as a sanity check.` : `Use your knowledge of the restaurant or typical recipes to estimate nutrition.`}
+For anything not on the menu, give your own per-serving estimate.
+Reply with only JSON in this shape:
+{"items":[{"menu":12,"qty":1.5},{"name":"Chocolate milk","sv":"12 fl oz","qty":1,"kcal":290,"p":12,"c":45,"f":7,"fb":2,"su":44,"as":20,"na":230,"ca":420,"fe":1,"k":600,"caf":0,"fl":12}],"note":"one short sentence on anything you were unsure about"}
+Use "menu" items when possible; non-menu items need kcal,p,c,f and your best guess for fb (fiber g), su (sugar g), as (added sugar g), na (sodium mg), ca (calcium mg), fe (iron mg), k (potassium mg), caf (caffeine mg) and, for drinks, fl (fluid ounces). Include drinks, electrolyte mixes, supplements and honey if they appear.`;
+  S.busy = "analyze"; render();
+  try {
+    const opts = { cache: false };
+    if (d.photos.length) opts.images = d.photos.map(p => p.file);
+    const res = await S.sample.json(prompt, opts);
+    const got = Array.isArray(res && res.items) ? res.items : [];
+    for (const g of got) {
+      const qty = clamp(Math.round((Number(g.qty) || 1) * 2) / 2, 0.5, 10);
+      const mi = Number.isInteger(g.menu) ? items[g.menu] : null;
+      if (mi) d.items.push({ n: mi.n, sv: mi.sv, qty, per: per(mi), src: "menu" });
+      else if (g.name && Number(g.kcal) >= 0) d.items.push({ n: String(g.name).slice(0, 80), sv: String(g.sv || "").slice(0, 30), qty, per: per(g), src: "est" });
+    }
+    d.aiNote = (res && res.note ? String(res.note) : "") + (got.length ? "" : " No food recognized.");
+    if (!got.length) toast("Couldn't find food in that. Try another photo or describe it.");
+  } catch (e) { if (e && e.code !== "cancelled") toast(errCopy(e)); }
+  finally { S.busy = null; render(); }
+}
+
+function nextMealContext() {
+  const t = targets(S.date), x = dayTotals(S.date);
+  const day = S.days[S.date];
+  const logged = day && day.entries.length ? day.entries.map(e => `${clock(e.time)} ${e.meal} @ ${e.hall || "?"}: ` + e.items.map(i => `${i.qty}× ${i.n}`).join(", ")).join("\n") : "nothing yet";
+  return `${profileLine()}
+Now: ${S.date === today() ? clock(nowHM()) + " on " : ""}${niceDate(S.date)}. Practice today: ${scheduleLine(S.date)}. Tomorrow: ${scheduleLine(addDays(S.date, 1))}.
+Eaten so far: ${fmt(x.kcal)} kcal, P ${r0(x.p)} g, C ${r0(x.c)} g, F ${r0(x.f)} g, fiber ${r0(x.fb)} g, calcium ${r0(x.ca)} mg, iron ${r0(x.fe)} mg, sodium ${r0(x.na)} mg, potassium ${r0(x.k)} mg (partial), fluids from drinks ${r0(x.fl)} of ~${r0(t.fl)} oz, caffeine ${r0(x.caf)} mg (keep under ~400 and avoid late caffeine before early practice).
+Logged meals:\n${logged}
+Remaining: ${fmt(Math.max(0, t.kcal - x.kcal))} kcal, P ${r0(Math.max(0, t.p - x.p))} g, C ${r0(Math.max(0, t.c - x.c))} g, F ${r0(Math.max(0, t.f - x.f))} g.`;
+}
+function menusFor(meal, cap) {
+  return (S.menus[S.date] || []).filter(d => d.kind === "Dining Courts").map(d => {
+    const m = d.meals.find(x => x.name === meal); if (!m) return "";
+    return `## ${d.hall} ${m.name} ${clock(m.start)}–${clock(m.end)}\n` + menuLines(d, meal, cap, true).map(i => itemLine(i)).join("\n");
+  }).filter(Boolean).join("\n\n");
+}
+async function askClaude(kind) {
+  const box = { coach: S.coach, plan: S.plan, out: S.out }[kind];
+  const home = kind === "coach" ? "today" : "where";
+  let prompt;
+  if (kind === "coach") {
+    const meals = mealsSpan((S.menus[S.date] || []).filter(d => d.kind === "Dining Courts"));
+    const next = pickMealByTime(meals);
+    prompt = `You are a sports dietitian coaching a collegiate rower day to day.
+${nextMealContext()}
+${next ? `Next dining-court meal: ${next}. What's being served (station | item | serving | kcal | P | C | F):\n${menusFor(next, 40)}` : "No dining menus loaded for today."}
+
+The menu lists above already leave out foods the athlete won't eat; only recommend dining-court items from them, and respect the food preferences for any other suggestion.
+If the dining courts look weak for them, you may suggest a specific order at a nearby chain instead (${SPOTS.join(", ")}).
+Give 3 to 5 short bullets for the rest of the day: what to eat next, where (name the dining court and specific items with servings), and when relative to practice. Point out the biggest gap (protein, carbs, calories, fiber, calcium, iron) and how to close it. If they're early in the day, don't scold them for being behind. Plain language, no preamble, no disclaimers.`;
+  } else if (kind === "out") {
+    prompt = `You are a sports dietitian helping a collegiate rower order at ${S.out.spot} near Purdue instead of a dining court.
+${nextMealContext()}
+
+Build one order at ${S.out.spot} that best fills what they still need, using the chain's real menu items and published nutrition. Respect their food preferences strictly and their practice timing (lower fat/fiber if practice is within ~2 hours; protein + carbs if it's a recovery meal).
+- One line: what this order is for.
+- A bulleted order exactly as they'd say it at the counter, each item with its approximate kcal and protein.
+- One line with totals (kcal, P, C, F).
+- One line with a lighter or bigger variation.
+Values are estimates from the chain's published nutrition. No preamble.`;
+  } else {
+    prompt = `You are a sports dietitian building a dining-court plate for a collegiate rower.
+${nextMealContext()}
+Meal to plan: ${S.plan.meal}. Menus at each Purdue dining court (station | item | serving | kcal | P | C | F per serving):
+${menusFor(S.plan.meal, 70)}
+
+These lists already leave out foods the athlete won't eat; choose items only from them.
+Pick the ONE best dining court for this meal given what they still need and their practice timing (if practice is soon after, keep fat and fiber lower; if it's a recovery meal, prioritize protein + carbs). Then:
+- One line: **Go to <hall>** and why in a few words.
+- A bulleted plate: each item with servings and its protein/carbs.
+- One line with the plate's totals (kcal, P, C, F).
+- One line naming a runner-up hall.
+If no dining court has a decent option for them (for example their preferences rule out most of the protein), say so plainly and instead suggest a specific order at one of these nearby chains: ${SPOTS.join(", ")}.
+Keep it tight. No preamble.`;
+  }
+  box.text = ""; box.err = ""; S.busy = kind; render();
+  try {
+    await S.sample(prompt, { cache: false, onText: ({ text }) => { box.text = text; if (S.view === home) render(); } });
+  } catch (e) { box.text = e && e.text || ""; if (!(e && e.code === "cancelled")) box.err = errCopy(e); }
+  finally { S.busy = null; render(); }
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b || b.tagName === "SELECT" || b.tagName === "INPUT" || b.tagName === "TEXTAREA") return;
+  const a = b.dataset.act;
+  if (a === "go") { S.view = b.dataset.v; if (S.view !== "setup") S.setup = null; S.confirmDel = null; render(); window.scrollTo(0, 0); }
+  else if (a === "day") { S.date = addDays(S.date, Number(b.dataset.n)); S.coach = { text: "", err: "" }; S.plan.text = ""; render(); }
+  else if (a === "today") { S.date = today(); render(); }
+  else if (a === "coach") askClaude("coach");
+  else if (a === "quick") quickAdd(Number(b.dataset.i));
+  else if (a === "undo") { const u = toastUndo; toastUndo = null; $("#toast").hidden = true; if (u) u(); }
+  else if (a === "starter") sendChat(b.dataset.v);
+  else if (a === "stopchat") { if (S.chat.ctl) S.chat.ctl.abort(); }
+  else if (a === "newchat") { S.chat.msgs = []; saveChat(); render(); }
+  else if (a === "discuss") {
+    const txt = { plan: S.plan.text, out: S.out.text, coach: S.coach.text }[b.dataset.v];
+    if (txt) { S.chat.msgs.push({ role: "user", content: "What should I eat?" }, { role: "assistant", content: txt }); saveChat(); }
+    S.view = "chat"; render(); scrollChat(); const t = $("#chatin"); if (t) t.focus();
+  }
+  else if (a === "plan") askClaude("plan");
+  else if (a === "out") askClaude("out");
+  else if (a === "pmeal") { S.plan.meal = b.dataset.v; S.plan.text = ""; S.plan.err = ""; render(); }
+  else if (a === "del") {
+    if (S.confirmDel !== b.dataset.id) { S.confirmDel = b.dataset.id; render(); return; }
+    const d = S.days[S.date]; d.entries = d.entries.filter(x => x.id !== b.dataset.id); S.confirmDel = null; saveDay(S.date); render(); toast("Meal deleted");
+  }
+  else if (a === "eqty") {
+    const d = S.days[S.date]; const en = d.entries.find(x => x.id === b.dataset.id); const it = en.items[Number(b.dataset.i)];
+    it.qty = Math.round((it.qty + Number(b.dataset.d)) * 2) / 2;
+    if (it.qty <= 0) en.items.splice(Number(b.dataset.i), 1);
+    if (!en.items.length) d.entries = d.entries.filter(x => x !== en);
+    saveDay(S.date); render();
+  }
+  else if (a === "dqty") {
+    const it = S.draft.items[Number(b.dataset.i)]; it.qty = Math.round((it.qty + Number(b.dataset.d)) * 2) / 2;
+    if (it.qty <= 0) S.draft.items.splice(Number(b.dataset.i), 1); render();
+  }
+  else if (a === "addmenu") {
+    const doc = (S.menus[S.date] || []).find(x => x.hall === S.draft.hall); const m = doc && doc.meals.find(x => x.name === S.draft.meal);
+    const mi = m && m.items[Number(b.dataset.i)]; if (!mi) return;
+    const ex = S.draft.items.find(x => x.n === mi.n && x.src === "menu");
+    if (ex) ex.qty += 1; else S.draft.items.push({ n: mi.n, sv: mi.sv, qty: 1, per: per(mi), src: "menu" });
+    toast("Added " + mi.n); render();
+  }
+  else if (a === "clearphotos") { S.draft.photos.forEach(p => URL.revokeObjectURL(p.url)); S.draft.photos = []; render(); }
+  else if (a === "analyze") analyze();
+  else if (a === "save") {
+    const d = S.draft; if (!d.items.length) return;
+    const day = S.days[S.date] || (S.days[S.date] = { date: S.date, entries: [] });
+    day.entries.push({ id: uid36(), time: d.time || nowHM(), hall: d.hall === "__other" ? (d.spot !== "__any" ? d.spot : "") : d.hall, meal: d.meal || "Meal", items: d.items.map(x => ({ ...x })) });
+    saveDay(S.date);
+    d.photos.forEach(p => URL.revokeObjectURL(p.url));
+    S.draft = { hall: d.hall, meal: d.meal, spot: d.spot, items: [], photos: [], note: "", time: "", aiNote: "" }; S.search = "";
+    S.coach = { text: "", err: "" }; S.view = "today"; render(); window.scrollTo(0, 0); toast("Meal saved");
+  }
+  else if (a === "seg") { S.setup[b.dataset.k] = b.dataset.v; render(); }
+  else if (a === "avoid") { const k = b.dataset.k, av = S.setup.avoid; S.setup.avoid = av.includes(k) ? av.filter(x => x !== k) : [...av, k]; render(); }
+  else if (a === "sday") { const x = S.setup.sessions[Number(b.dataset.i)], d = Number(b.dataset.d); x.days = x.days.includes(d) ? x.days.filter(y => y !== d) : [...x.days, d]; render(); }
+  else if (a === "addsess") { S.setup.sessions.push({ days: [], start: "15:00", end: "17:00", type: "Erg" }); render(); }
+  else if (a === "rmsess") { S.setup.sessions.splice(Number(b.dataset.i), 1); render(); }
+  else if (a === "savesetup") {
+    const s = S.setup; const w = Number(s.weight), age = Number(s.age), ft = Number(s.ft);
+    if (!(w > 80 && w < 400) || !(age > 13 && age < 80) || !(ft >= 4 && ft <= 7)) { toast("Check weight, height and age."); return; }
+    const prof = { ...s, example: false, weight: w, age, ft, inch: Number(s.inch) || 0, sessions: s.sessions.filter(x => x.days.length && x.start && x.end) };
+    delete prof.example; S.profile = prof; S.setup = null; put("profile", prof); toast("Saved. Targets updated."); S.view = "today"; render(); window.scrollTo(0, 0);
+  }
+});
+document.addEventListener("input", e => {
+  const el = e.target;
+  if (el.dataset.act === "chatin") S.chat.draft = el.value;
+  else if (el.dataset.act === "note") S.draft.note = el.value;
+  else if (el.dataset.act === "time") S.draft.time = el.value;
+  else if (el.dataset.act === "search") { S.search = el.value; const doc = (S.menus[S.date] || []).find(x => x.hall === S.draft.hall); $("#menulist").innerHTML = menuListHTML(doc); }
+  else if (el.dataset.k && S.setup) S.setup[el.dataset.k] = el.value;
+  else if (el.dataset.s != null && S.setup) S.setup.sessions[Number(el.dataset.s)][el.dataset.f] = el.value;
+});
+document.addEventListener("change", e => {
+  const el = e.target, a = el.dataset.act;
+  if (a === "hall") { S.draft.hall = el.value; S.draft.meal = ""; S.search = ""; render(); }
+  else if (a === "spot") { S.draft.spot = el.value; render(); }
+  else if (a === "outspot") { S.out.spot = el.value; S.out.text = ""; S.out.err = ""; render(); }
+  else if (a === "meal" || a === "mealo") { S.draft.meal = el.value; S.search = ""; render(); }
+  else if (a === "photo") {
+    for (const f of el.files) if (S.draft.photos.length < 4) S.draft.photos.push({ file: f, url: URL.createObjectURL(f) });
+    render();
+  }
+  else if (el.dataset.s != null && S.setup) { S.setup.sessions[Number(el.dataset.s)][el.dataset.f] = el.value; }
+});
+
+document.addEventListener("submit", e => {
+  if (e.target.id !== "chatform") return;
+  e.preventDefault(); sendChat($("#chatin").value);
+});
+document.addEventListener("keydown", e => {
+  if (e.target.id === "chatin" && e.key === "Enter" && !e.shiftKey && !e.isComposing && window.matchMedia("(hover: hover)").matches) { e.preventDefault(); sendChat(e.target.value); }
+});
+
+/* ---------- boot ---------- */
+render();
+const use = n => (window.claude && window.claude.use ? window.claude.use(n).catch(() => null) : Promise.resolve(null));
+(async () => {
+  const [db, user, sample] = await Promise.all([use("db"), use("user"), use("sample")]);
+  S.sample = sample;
+  if (sample) { const lim = await sample.limits().catch(() => null); S.canImg = !!(lim && lim.images); S.canTools = !!(lim && lim.tools); }
+  if (db) {
+    S.db = db; S.menuState = {};
+    const id = user ? await user.id().catch(() => null) : null;
+    if (id) {
+      S.uid = id;
+      db.collection("data/users/" + id).onSnapshot(snap => {
+        for (const d of snap.docs) {
+          if (d.id === "profile") S.profile = d.data();
+          else if (d.id === "chat" && !S.busy) S.chat.msgs = JSON.parse(JSON.stringify(d.data().msgs || []));
+          else if (d.id.startsWith("day-")) S.days[d.id.slice(4)] = JSON.parse(JSON.stringify(d.data()));
+        }
+        for (const ch of snap.docChanges()) if (ch.type === "removed" && ch.doc.id.startsWith("day-")) delete S.days[ch.doc.id.slice(4)];
+        if (!(S.view === "setup" && S.setup)) render();
+      }, () => {});
+    } else loadLocal();
+  } else loadLocal();
+  render();
+})();
+})();
+</script>

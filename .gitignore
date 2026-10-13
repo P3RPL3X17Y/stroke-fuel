@@ -1,0 +1,5 @@
+# Generated menu cache (re-create with sync_menus.py)
+menus/
+# Local tool settings
+.claude/
+__pycache__/
